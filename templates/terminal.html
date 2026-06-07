@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOC AI — Terminal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap');
+:root {
+  --bg:      #07090f;
+  --surf:    #0c1018;
+  --surf2:   #111622;
+  --border:  #1c2535;
+  --border2: #2a3a50;
+  --text:    #b8cce0;
+  --muted:   #3d5470;
+  --accent:  #00e5ff;
+  --p1:      #ff2d55;
+  --p2:      #ff9f0a;
+  --p3:      #30d158;
+  --mono:    'Share Tech Mono', monospace;
+  --display: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--display); background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+
+/* ── HEADER ── */
+header {
+  height: 52px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 16px; padding: 0 24px;
+  background: var(--surf); border-bottom: 1px solid var(--border); z-index: 50;
+}
+.logo { font-family: var(--mono); font-size: 1.05rem; color: var(--accent); letter-spacing: 3px; display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--p1); box-shadow: 0 0 10px var(--p1); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.soc-badge {
+  font-family: var(--mono); font-size: .7rem;
+  padding: 3px 10px; border-radius: 5px;
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; gap: 6px;
+  transition: all .3s;
+}
+.soc-badge-dot   { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: all .3s; flex-shrink: 0; }
+.soc-badge-label { color: var(--muted); transition: color .3s; white-space: nowrap; }
+.soc-badge.active  { border-color: #004a2a; background: #002e1a; }
+.soc-badge.active .soc-badge-dot   { background: var(--p3); box-shadow: 0 0 6px var(--p3); }
+.soc-badge.active .soc-badge-label { color: var(--p3); }
+.soc-badge.stopped .soc-badge-dot   { background: var(--p1); }
+.soc-badge.stopped .soc-badge-label { color: var(--muted); }
+
+nav { margin-left: auto; display: flex; gap: 6px; }
+nav a { font-family: var(--mono); font-size: .75rem; color: var(--muted); text-decoration: none;
+        padding: 5px 14px; border-radius: 5px; border: 1px solid transparent; transition: all .2s; }
+nav a:hover, nav a.active { color: var(--accent); border-color: var(--border2); background: var(--border); }
+.user-info { display: flex; align-items: center; gap: 10px; margin-left: 8px; }
+.user-info span { font-family: var(--mono); font-size: .75rem; color: var(--muted); }
+.badge-admin { background: #3d0d14; color: var(--p1); font-family: var(--mono); font-size: .65rem; padding: 2px 8px; border-radius: 4px; border: 1px solid #5a1520; }
+.btn-logout { font-family: var(--mono); font-size: .7rem; color: var(--muted); background: transparent;
+              border: 1px solid var(--border2); border-radius: 5px; padding: 4px 10px; cursor: pointer; transition: all .15s; }
+.btn-logout:hover { color: var(--p1); border-color: var(--p1); }
+
+/* ── LAYOUT ── */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 220px; flex-shrink: 0; background: var(--surf);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  padding: 16px 0; overflow-y: auto;
+}
+.sidebar h3 { font-family: var(--mono); font-size: .62rem; color: var(--muted); text-transform: uppercase;
+              letter-spacing: 2px; padding: 0 16px; margin-bottom: 12px; }
+.cmd-btn {
+  display: block; width: 100%; text-align: left;
+  font-family: var(--mono); font-size: .75rem; color: var(--text);
+  background: transparent; border: none; border-left: 2px solid transparent;
+  padding: 8px 16px; cursor: pointer; transition: all .15s;
+}
+.cmd-btn:hover { background: var(--surf2); border-left-color: var(--accent); color: var(--accent); }
+.cmd-btn:disabled { opacity: .4; cursor: not-allowed; }
+.cmd-sep { height: 1px; background: var(--border); margin: 10px 16px; }
+.cmd-label { font-family: var(--mono); font-size: .6rem; color: var(--muted); text-transform: uppercase;
+             letter-spacing: 2px; padding: 6px 16px 4px; }
+
+/* ── MAIN ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.term-topbar {
+  padding: 10px 20px; background: var(--surf); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.term-title  { font-family: var(--mono); font-size: .75rem; color: var(--muted); }
+.term-host   { font-family: var(--mono); font-size: .75rem; color: var(--p3); }
+.term-status { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+.term-status.running { color: var(--p2); }
+.term-status.done    { color: var(--p3); }
+.btn-kill {
+  font-family: var(--mono); font-size: .7rem; color: var(--p1);
+  background: #3d0d14; border: 1px solid #5a1520; border-radius: 4px;
+  padding: 3px 10px; cursor: pointer; transition: all .15s; display: none;
+}
+.btn-kill:hover { background: #5a1520; }
+.btn-kill.visible { display: inline-block; }
+.term-clear {
+  margin-left: auto; font-family: var(--mono); font-size: .7rem; color: var(--muted);
+  background: transparent; border: 1px solid var(--border2); border-radius: 4px;
+  padding: 3px 10px; cursor: pointer; transition: all .15s;
+}
+.term-clear:hover { color: var(--text); background: var(--surf2); }
+
+.term-output {
+  flex: 1; overflow-y: auto; padding: 16px 20px;
+  font-family: var(--mono); font-size: .83rem; line-height: 1.6;
+}
+.term-output::-webkit-scrollbar { width: 4px; }
+.term-output::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.term-entry    { margin-bottom: 14px; }
+.term-cmd-line { display: flex; gap: 8px; margin-bottom: 4px; }
+.term-prompt   { color: var(--accent); flex-shrink: 0; }
+.term-cmd-text { color: var(--text); }
+.term-result   { white-space: pre-wrap; word-break: break-word; }
+.term-result.ok   { color: var(--text); }
+.term-result.err  { color: var(--p1); }
+.term-result.info { color: var(--muted); font-style: italic; }
+.cursor { display: inline-block; width: 8px; height: 14px; background: var(--p2);
+          animation: blink 0.8s step-end infinite; vertical-align: text-bottom; margin-left: 2px; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.term-input-bar {
+  padding: 12px 20px; background: var(--surf); border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.term-input-prompt { font-family: var(--mono); font-size: .85rem; color: var(--accent); flex-shrink: 0; white-space: nowrap; }
+.term-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-family: var(--mono); font-size: .85rem; color: var(--text); caret-color: var(--accent);
+}
+.term-input::placeholder { color: var(--muted); }
+.term-input:disabled { opacity: .5; }
+.term-run {
+  font-family: var(--mono); font-size: .75rem; color: var(--bg);
+  background: var(--accent); border: none; border-radius: 5px;
+  padding: 6px 14px; cursor: pointer; font-weight: 700; transition: opacity .15s; white-space: nowrap;
+}
+.term-run:hover { opacity: .85; }
+.term-run:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── PANNEAU LOGS PERSISTANT ── */
+.logs-panel {
+  height: 200px; flex-shrink: 0;
+  background: var(--bg); border-top: 2px solid var(--border2);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: height .2s ease;
+}
+.logs-panel.collapsed { height: 34px; }
+
+.logs-topbar {
+  height: 34px; min-height: 34px;
+  display: flex; align-items: center; gap: 8px; padding: 0 14px;
+  background: var(--surf2); border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; flex-shrink: 0;
+}
+.logs-topbar:hover { background: var(--surf); }
+.logs-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all .3s; }
+.logs-dot.active  { background: var(--p3); box-shadow: 0 0 6px var(--p3); animation: pulse 2s infinite; }
+.logs-dot.stopped { background: var(--p1); animation: none; box-shadow: none; }
+.logs-title  { font-family: var(--mono); font-size: .63rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; white-space: nowrap; }
+.logs-status { font-family: var(--mono); font-size: .68rem; white-space: nowrap; }
+.logs-status.active  { color: var(--p3); }
+.logs-status.stopped { color: var(--p1); }
+.logs-status.unknown { color: var(--muted); }
+.logs-lastline { font-family: var(--mono); font-size: .63rem; color: var(--muted);
+                 flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 6px; }
+.logs-actions { display: flex; gap: 4px; margin-left: auto; }
+.logs-btn {
+  font-family: var(--mono); font-size: .63rem; color: var(--muted);
+  background: transparent; border: 1px solid var(--border2); border-radius: 3px;
+  padding: 1px 7px; cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.logs-btn:hover { color: var(--accent); border-color: var(--accent); }
+.logs-toggle { font-family: var(--mono); font-size: .75rem; color: var(--muted); margin-left: 8px; flex-shrink: 0; }
+
+.logs-content {
+  flex: 1; overflow-y: auto; padding: 8px 16px;
+  font-family: var(--mono); font-size: .75rem; line-height: 1.55;
+}
+.logs-content::-webkit-scrollbar { width: 3px; }
+.logs-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.log-line          { white-space: pre-wrap; word-break: break-word; }
+.log-line.info     { color: var(--accent); }
+.log-line.warning  { color: var(--p2); }
+.log-line.error    { color: var(--p1); }
+.log-line.ok       { color: var(--p3); }
+.log-line.blocked  { color: var(--p1); font-weight: bold; }
+.log-line.bruteforce { color: var(--p1); font-weight: bold; }
+.log-line.normal   { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>SOC/AI</div>
+
+  <div class="soc-badge" id="soc-badge">
+    <span class="soc-badge-dot" id="soc-dot"></span>
+    <span class="soc-badge-label" id="soc-label">SOC AI...</span>
+  </div>
+
+  <nav>
+    <a href="/dashboard">Vue globale</a>
+    <a href="/closed">Fermées</a>
+    <a href="/admin/users">👥 Utilisateurs</a>
+    <a href="/terminal" class="active">💻 Terminal</a>
+    <a href="/profile">👤 Mon profil</a>
+  </nav>
+  <div class="user-info">
+    <span>{{ user.name }}</span>
+    <span class="badge-admin">ADMIN</span>
+    <button class="btn-logout" onclick="location.href='/logout'">Déconnexion</button>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <h3>Commandes rapides</h3>
+    <div class="cmd-label">SOC AI</div>
+    <button class="cmd-btn" onclick="runCmd('python3 /root/soc_ai.py')">▶ Lancer soc_ai.py</button>
+    <button class="cmd-btn" onclick="runCmd('pkill -f soc_ai.py && echo Stopped')">■ Stopper soc_ai.py</button>
+    <button class="cmd-btn" onclick="runCmd('tail -f /root/soc_ai.log')">📋 Suivre logs soc_ai</button>
+    <button class="cmd-btn" onclick="runCmd('tail -n 30 /root/soc_ai.log')">📋 Derniers logs</button>
+    <button class="cmd-btn" onclick="runCmd('cat /root/soc_db.json | python3 -m json.tool | head -80')">🗄 Voir DB</button>
+    <button class="cmd-btn" onclick="runCmd('echo [] > /root/soc_db.json && echo [] > /root/processed_cache.json && echo DB reinitialisee')">🗑 Reset DB</button>
+    <div class="cmd-sep"></div>
+    <div class="cmd-label">Wazuh</div>
+    <button class="cmd-btn" onclick="runCmd('/var/ossec/bin/ossec-control status')">📊 Status Wazuh</button>
+    <button class="cmd-btn" onclick="runCmd('tail -n 20 /var/ossec/logs/alerts/alerts.json')">🔔 Dernières alertes</button>
+    <button class="cmd-btn" onclick="runCmd('wc -l /var/ossec/logs/alerts/alerts.json')">📈 Nb alertes</button>
+    <button class="cmd-btn" onclick="runCmd('/var/ossec/bin/ossec-control restart')">🔄 Restart Wazuh</button>
+    <div class="cmd-sep"></div>
+    <div class="cmd-label">Système</div>
+    <button class="cmd-btn" onclick="runCmd('free -h')">💾 RAM</button>
+    <button class="cmd-btn" onclick="runCmd('df -h /')">💿 Disque</button>
+    <button class="cmd-btn" onclick="runCmd('uptime')">⏱ Uptime</button>
+    <button class="cmd-btn" onclick="runCmd('ps aux | grep python3')">🐍 Process Python</button>
+    <button class="cmd-btn" onclick="runCmd('ip a')">🌐 Interfaces réseau</button>
+    <button class="cmd-btn" onclick="runCmd('ss -tlnp')">🔌 Ports ouverts</button>
+    <div class="cmd-sep"></div>
+    <div class="cmd-label">Fichiers SOC</div>
+    <button class="cmd-btn" onclick="runCmd('ls -la /root/')">📁 /root/</button>
+    <button class="cmd-btn" onclick="runCmd('cat /root/config.py')">⚙ Voir config.py</button>
+    <button class="cmd-btn" onclick="runCmd('cat /root/core/firewall.py')">🔥 Voir firewall.py</button>
+    <button class="cmd-btn" onclick="runCmd('cat /root/core/priority.py')">⚖ Voir priority.py</button>
+  </div>
+
+  <div class="main">
+    <div class="term-topbar">
+      <span class="term-title">Terminal —</span>
+      <span class="term-host">root@manager</span>
+      <span id="cwd-display" style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">/root</span>
+      <span class="term-status" id="term-status">● Prêt</span>
+      <button class="btn-kill" id="btn-kill" onclick="killCmd()">⬛ Arrêter</button>
+      <button class="term-clear" onclick="clearTerm()">✕ Effacer</button>
+    </div>
+
+    <div class="term-output" id="term-output">
+      <div class="term-entry">
+        <div class="term-result info">SOC AI — Terminal Web · Admin · Wazuh Manager (local)</div>
+        <div class="term-result info">Tapez une commande ou utilisez les raccourcis à gauche.</div>
+        <div class="term-result info">────────────────────────────────────────────────────────</div>
+      </div>
+    </div>
+
+    <div class="term-input-bar">
+      <span class="term-input-prompt" id="prompt-display">root@manager:/root$</span>
+      <input class="term-input" id="term-input" type="text"
+             placeholder="commande bash..."
+             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+             onkeydown="handleKey(event)">
+      <button class="term-run" id="run-btn" onclick="submitCmd()">Exécuter</button>
+    </div>
+
+    <!-- ══ PANNEAU LOGS PERSISTANT ══ -->
+    <div class="logs-panel" id="logs-panel">
+      <div class="logs-topbar" onclick="toggleLogs()">
+        <span class="logs-dot" id="logs-dot"></span>
+        <span class="logs-title">soc_ai.log</span>
+        <span class="logs-status unknown" id="logs-status">Vérification...</span>
+        <span class="logs-lastline" id="logs-lastline"></span>
+        <div class="logs-actions" onclick="event.stopPropagation()">
+          <button class="logs-btn" onclick="clearLogsPanel()">Effacer</button>
+          <button class="logs-btn" onclick="scrollLogsBottom()">↓ Bas</button>
+        </div>
+        <span class="logs-toggle" id="logs-toggle">▼</span>
+      </div>
+      <div class="logs-content" id="logs-content">
+        <div class="log-line normal">Chargement...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// TERMINAL
+// ════════════════════════════════════════════════
+let cmdHistory = [], histIdx = -1, cwd = '/root';
+let currentReader = null;
+
+function handleKey(e) {
+  if (e.key === 'Enter') { submitCmd(); return; }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (histIdx < cmdHistory.length - 1) histIdx++;
+    document.getElementById('term-input').value = cmdHistory[cmdHistory.length - 1 - histIdx] || '';
+    return;
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (histIdx > 0) histIdx--;
+    else { histIdx = -1; document.getElementById('term-input').value = ''; return; }
+    document.getElementById('term-input').value = cmdHistory[cmdHistory.length - 1 - histIdx] || '';
+    return;
+  }
+}
+
+function submitCmd() {
+  const inp = document.getElementById('term-input');
+  const cmd = inp.value.trim();
+  if (!cmd) return;
+  inp.value = '';
+  histIdx = -1;
+  cmdHistory.push(cmd);
+  if (cmdHistory.length > 200) cmdHistory.shift();
+  runCmd(cmd);
+}
+
+function killCmd() {
+  if (currentReader) { currentReader.cancel(); currentReader = null; }
+  setRunning(false);
+}
+
+function setRunning(running) {
+  const btn  = document.getElementById('run-btn');
+  const inp  = document.getElementById('term-input');
+  const kill = document.getElementById('btn-kill');
+  const st   = document.getElementById('term-status');
+  document.querySelectorAll('.cmd-btn').forEach(b => b.disabled = running);
+  btn.disabled = running;
+  inp.disabled = running;
+  if (running) {
+    kill.classList.add('visible');
+    st.textContent = '▌ En cours...';
+    st.className = 'term-status running';
+  } else {
+    kill.classList.remove('visible');
+    st.textContent = '● Prêt';
+    st.className = 'term-status done';
+    setTimeout(() => { st.textContent = '● Prêt'; st.className = 'term-status'; }, 2000);
+    if (!inp.disabled) inp.focus();
+  }
+}
+
+async function runCmd(cmd) {
+  const out = document.getElementById('term-output');
+  const entry = document.createElement('div');
+  entry.className = 'term-entry';
+  entry.innerHTML =
+    '<div class="term-cmd-line">' +
+      '<span class="term-prompt">root@manager:' + escHtml(cwd) + '$</span>' +
+      '<span class="term-cmd-text"> ' + escHtml(cmd) + '</span>' +
+    '</div><div class="term-result ok" id="live-out"></div>';
+  out.appendChild(entry);
+  out.scrollTop = out.scrollHeight;
+
+  const liveEl = entry.querySelector('#live-out');
+  setRunning(true);
+
+  try {
+    const r = await fetch('/terminal/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cmd: cmd, cwd: cwd })
+    });
+
+    const ct = r.headers.get('content-type') || '';
+
+    // JSON → cd ou erreur immédiate
+    if (ct.includes('application/json')) {
+      const d = await r.json();
+      if (d.cwd && d.cwd !== cwd) {
+        cwd = d.cwd;
+        document.getElementById('cwd-display').textContent = cwd;
+        document.getElementById('prompt-display').textContent = 'root@manager:' + cwd + '$';
+      }
+      if (d.output && d.output.trim()) {
+        liveEl.textContent = d.output;
+        liveEl.className = 'term-result ' + (d.returncode !== 0 ? 'err' : 'ok');
+      } else if (d.returncode === 0) {
+        liveEl.textContent = '[OK]';
+        liveEl.className = 'term-result info';
+      } else {
+        liveEl.textContent = '[exit ' + d.returncode + ']';
+        liveEl.className = 'term-result err';
+      }
+      setRunning(false);
+      return;
+    }
+
+    // SSE → streaming en temps réel
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    liveEl.appendChild(cursor);
+
+    const reader = r.body.getReader();
+    currentReader = reader;
+    const decoder = new TextDecoder();
+    let buffer = '', hasErr = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6);
+        if (payload.startsWith('__EXIT__:')) {
+          if (parseInt(payload.split(':')[1]) !== 0) hasErr = true;
+        } else {
+          liveEl.insertBefore(document.createTextNode(payload + '\n'), cursor);
+          out.scrollTop = out.scrollHeight;
+        }
+      }
+    }
+
+    cursor.remove();
+    liveEl.className = 'term-result ' + (hasErr ? 'err' : 'ok');
+    if (!liveEl.textContent.trim()) {
+      liveEl.textContent = '[OK — pas de sortie]';
+      liveEl.className = 'term-result info';
+    }
+    currentReader = null;
+
+  } catch(e) {
+    if (e.name === 'AbortError' || (e.message && e.message.includes('cancel'))) {
+      liveEl.textContent += '\n[Arrêté par l\'utilisateur]';
+    } else {
+      liveEl.textContent = 'Erreur : ' + e.message;
+    }
+    liveEl.className = 'term-result err';
+    currentReader = null;
+  }
+
+  setRunning(false);
+  out.scrollTop = out.scrollHeight;
+}
+
+function clearTerm() {
+  document.getElementById('term-output').innerHTML =
+    '<div class="term-entry"><div class="term-result info">Terminal effacé.</div></div>';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('term-input').focus();
+
+// ════════════════════════════════════════════════
+// PANNEAU LOGS + BADGE STATUT — polling toutes les 3s
+// L'état est stocké dans la page, pas dans le serveur
+// → survit à toute navigation DANS la page terminal
+// ════════════════════════════════════════════════
+let logsCollapsed  = false;
+let logsAutoScroll = true;
+let lastLogHash    = '';
+
+function toggleLogs() {
+  logsCollapsed = !logsCollapsed;
+  document.getElementById('logs-panel').classList.toggle('collapsed', logsCollapsed);
+  document.getElementById('logs-toggle').textContent = logsCollapsed ? '▲' : '▼';
+}
+
+function scrollLogsBottom() {
+  const c = document.getElementById('logs-content');
+  c.scrollTop = c.scrollHeight;
+  logsAutoScroll = true;
+}
+
+function clearLogsPanel() {
+  document.getElementById('logs-content').innerHTML = '<div class="log-line normal">[panneau effacé]</div>';
+  lastLogHash = '';
+}
+
+function classifyLine(line) {
+  const l = line.toLowerCase();
+  if (l.includes('bruteforce') || l.includes('brute force') || l.includes('🔥')) return 'bruteforce';
+  if (l.includes('bloqué') || l.includes('blocage') || l.includes('🚫')) return 'blocked';
+  if (l.includes('[info]') && (l.includes('✅') || l.includes('ticket'))) return 'ok';
+  if (l.includes('[info]')) return 'info';
+  if (l.includes('[warning]') || l.includes('[warn]')) return 'warning';
+  if (l.includes('[error]') || l.includes('[critical]')) return 'error';
+  return 'normal';
+}
+
+async function pollStatus() {
+  try {
+    const r = await fetch('/api/soc-status');
+    const d = await r.json();
+
+    // ── Badge header ──
+    const badge = document.getElementById('soc-badge');
+    const sdot  = document.getElementById('soc-dot');
+    const slab  = document.getElementById('soc-label');
+    if (d.running) {
+      badge.className = 'soc-badge active';
+      slab.textContent = 'SOC AI ● ACTIF';
+    } else {
+      badge.className = 'soc-badge stopped';
+      slab.textContent = 'SOC AI ■ STOPPÉ';
+    }
+
+    // ── Panneau logs — statut ──
+    const ldot = document.getElementById('logs-dot');
+    const lst  = document.getElementById('logs-status');
+    if (d.running) {
+      ldot.className = 'logs-dot active';
+      lst.textContent = '● ACTIF';
+      lst.className = 'logs-status active';
+    } else {
+      ldot.className = 'logs-dot stopped';
+      lst.textContent = '■ STOPPÉ';
+      lst.className = 'logs-status stopped';
+    }
+
+    // ── Panneau logs — contenu ──
+    const logs = (d.last_logs || '').trim();
+    // Hash simple pour éviter de re-rendre si pas de changement
+    const hash = logs.length + '|' + logs.slice(-60);
+    if (hash === lastLogHash) return;
+    lastLogHash = hash;
+
+    const lines = logs.split('\n').filter(function(l) { return l.trim(); });
+
+    // Dernière ligne dans la topbar
+    if (lines.length > 0) {
+      document.getElementById('logs-lastline').textContent = lines[lines.length - 1].slice(0, 90);
+    }
+
+    // Vérifier si on était en bas avant de re-rendre
+    const content = document.getElementById('logs-content');
+    const wasAtBottom = content.scrollHeight - content.scrollTop - content.clientHeight < 40;
+
+    content.innerHTML = '';
+    lines.forEach(function(line) {
+      const div = document.createElement('div');
+      div.className = 'log-line ' + classifyLine(line);
+      div.textContent = line;
+      content.appendChild(div);
+    });
+
+    if (logsAutoScroll || wasAtBottom) {
+      content.scrollTop = content.scrollHeight;
+    }
+
+  } catch(e) { /* silencieux si Flask temporairement indispo */ }
+}
+
+// Détecter scroll manuel dans les logs
+document.getElementById('logs-content').addEventListener('scroll', function() {
+  const el = this;
+  logsAutoScroll = (el.scrollHeight - el.scrollTop - el.clientHeight) < 40;
+});
+
+// Démarrer le polling
+pollStatus();
+setInterval(pollStatus, 3000);
+</script>
+</body>
+</html>

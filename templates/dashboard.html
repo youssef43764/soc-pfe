@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>SOC Enterprise Console</title>
+</head>
+
+<body class="bg-slate-950 text-slate-200 font-sans">
+<div class="flex h-screen">
+
+<!-- SIDEBAR -->
+<div class="w-72 bg-slate-900 border-r border-slate-800 p-6">
+    <h1 class="text-xl font-bold mb-8">SOC Enterprise</h1>
+
+    <div class="space-y-3 text-sm">
+        <button onclick="filterPriority('ALL')" class="block hover:text-blue-400">Toutes</button>
+        <button onclick="filterPriority('P1')" class="block text-red-400">P1 - Critique</button>
+        <button onclick="filterPriority('P2')" class="block text-orange-400">P2 - Elevé</button>
+        <button onclick="filterPriority('P3')" class="block text-yellow-400">P3 - Moyen</button>
+        <button onclick="filterPriority('P4')" class="block text-green-400">P4 - Faible</button>
+    </div>
+
+    <div class="mt-10 text-xs text-slate-400">
+        Total alertes : {{stats.total}}
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="flex-1 p-10 overflow-auto">
+
+<h2 class="text-2xl font-semibold mb-10">Security Overview</h2>
+
+<!-- PRIORITY CARDS -->
+<div class="grid grid-cols-4 gap-6 mb-12">
+{% for p,color in [('P1','red'),('P2','orange'),('P3','yellow'),('P4','green')] %}
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-lg">
+        <p class="text-{{color}}-400 text-xs">{{p}}</p>
+        <p class="text-2xl font-bold">{{stats[p]}}</p>
+    </div>
+{% endfor %}
+</div>
+
+<!-- MITRE CHART -->
+<div class="bg-slate-900 border border-slate-800 p-6 rounded-lg mb-12">
+    <h3 class="mb-4 text-sm text-slate-400">MITRE ATT&CK Distribution</h3>
+    <canvas id="mitreChart"></canvas>
+</div>
+
+<!-- TABLE -->
+<div class="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+<table class="w-full text-sm table-fixed">
+<thead class="bg-slate-800 text-xs uppercase">
+<tr>
+<th class="p-4">ID</th>
+<th class="p-4">Priority</th>
+<th class="p-4">Score</th>
+<th class="p-4">Verdict</th>
+<th class="p-4">Threat</th>
+<th class="p-4">IP</th>
+<th class="p-4">Status</th>
+<th class="p-4">Action</th>
+</tr>
+</thead>
+
+<tbody id="alertsTable">
+{% for a in alerts %}
+<tr data-priority="{{a.priority}}">
+<td class="p-4 font-mono text-xs truncate max-w-[180px]">{{a.id}}</td>
+<td class="p-4">{{a.priority}}</td>
+<td class="p-4">{{a.score}}</td>
+<td class="p-4">{{a.verdict}}</td>
+<td class="p-4">{{a.threat_level}}</td>
+<td class="p-4">{{a.source_ip}}</td>
+<td class="p-4">{{a.status}}</td>
+<td class="p-4 space-x-2">
+<a href="/alert/{{a.id}}" class="px-2 py-1 bg-blue-600 text-white text-xs rounded">Voir</a>
+
+<form action="/close_alert/{{a.id}}" method="POST" class="inline">
+<button class="px-2 py-1 bg-red-600 text-white text-xs rounded">Close</button>
+</form>
+
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<!-- BOUTON FLOTTANT -->
+<button onclick="toggleChat()"
+class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg text-xl">
+🤖
+</button>
+
+<!-- CHATBOT -->
+<div id="chatContainer"
+class="hidden fixed bottom-24 right-6 w-96 bg-slate-900 border border-slate-800 rounded-lg shadow-xl">
+
+<div class="p-3 border-b border-slate-800 font-bold text-sm flex justify-between items-center">
+SOC Assistant
+<button onclick="toggleChat()" class="text-red-400 text-xs">X</button>
+</div>
+
+<div id="chatMessages" class="h-64 overflow-y-auto p-3 text-xs space-y-2"></div>
+
+<div class="flex border-t border-slate-800">
+<input id="chatInput"
+class="flex-1 bg-slate-800 p-2 text-xs outline-none"
+placeholder="Entrez ID alerte...">
+
+<button onclick="sendMessage()"
+class="px-3 bg-blue-600 text-xs">
+Send
+</button>
+</div>
+
+</div>
+
+<script>
+let chart = new Chart(document.getElementById("mitreChart"),{
+type:"bar",
+data:{
+labels: {{ mitre_stats.keys()|list|tojson }},
+datasets:[{
+data: {{ mitre_stats.values()|list|tojson }},
+backgroundColor:"#3b82f6"
+}]
+},
+options:{plugins:{legend:{display:false}}}
+});
+
+function filterPriority(level){
+document.querySelectorAll("#alertsTable tr").forEach(row=>{
+let priority = row.dataset.priority;
+row.style.display = (level==="ALL" || priority===level) ? "" : "none";
+});
+}
+
+function toggleChat(){
+document.getElementById("chatContainer").classList.toggle("hidden");
+}
+
+function sendMessage(){
+let input = document.getElementById("chatInput");
+let message = input.value.trim();
+if(!message) return;
+
+let div = document.getElementById("chatMessages");
+
+// message user
+div.innerHTML += `<div class="text-blue-400">Vous: ${message}</div>`;
+
+// thinking
+let thinkingId = "thinking-" + Date.now();
+div.innerHTML += `<div id="${thinkingId}" class="text-yellow-400 italic animate-pulse">IA réfléchit...</div>`;
+
+div.scrollTop = div.scrollHeight;
+
+fetch("/chatbot",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({message:message})
+})
+.then(res=>res.json())
+.then(data=>{
+let t = document.getElementById(thinkingId);
+if(t) t.remove();
+
+div.innerHTML += `<div class="text-green-400 whitespace-pre-line">${data.response}</div>`;
+div.scrollTop = div.scrollHeight;
+})
+.catch(err=>{
+let t = document.getElementById(thinkingId);
+if(t) t.remove();
+
+div.innerHTML += `<div class="text-red-400">Erreur serveur</div>`;
+});
+
+input.value="";
+}
+document.getElementById("chatInput").addEventListener("keypress", function(e){
+if(e.key === "Enter"){
+sendMessage();
+}
+});
+</script>
+
+</body>
+</html>

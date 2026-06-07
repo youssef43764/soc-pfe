@@ -1,0 +1,16 @@
+[
+  {
+    "username": "admin",
+    "password": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+    "role": "admin",
+    "name": "Administrateur",
+    "created": "2026-04-23 04:03:35.988742"
+  },
+  {
+    "username": "youssef",
+    "password": "72fa82a371fd4ded62523eb267a2bc1b111b058fe4a9a829a268951212af18f3",
+    "role": "analyst",
+    "name": "youssef",
+    "created": "2026-04-23 10:25:51.122682"
+  }
+]

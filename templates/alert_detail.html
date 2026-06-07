@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Alert Detail</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-6">
+
+<h2 class="text-xl mb-4">Détail Alerte</h2>
+
+<div class="bg-slate-800 p-4 rounded space-y-2">
+<p><b>ID:</b> {{alert.id}}</p>
+<p><b>Priorité:</b> {{alert.priority}}</p>
+<p><b>Score:</b> {{alert.score}}</p>
+<p><b>Verdict:</b> {{alert.verdict}}</p>
+<p><b>Niveau menace:</b> {{alert.threat_level}}</p>
+<p><b>MITRE:</b> {{alert.mitre_tactiques}}</p>
+<p><b>Technique:</b> {{alert.mitre_technique}}</p>
+<p><b>Status:</b> {{alert.status}}</p>
+<p><b>Recommandation:</b> {{alert.recommendation}}</p>
+</div>
+
+<a href="/dashboard" class="text-blue-400 mt-4 inline-block">
+← Retour Dashboard
+</a>
+
+</body>
+</html>

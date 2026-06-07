@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Rapport SOC AI</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; color: #222; }
+  h1 { color: #1F3864; border-bottom: 2px solid #1F3864; padding-bottom: 8px; }
+  h2 { color: #2E5496; margin-top: 30px; }
+
+  /* Formulaire filtre */
+  .filter-box {
+    background: #EBF3FB; border: 1px solid #1F4E79; border-radius: 10px;
+    padding: 20px 24px; margin-bottom: 28px; display: flex;
+    align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .filter-box label { font-size: .85rem; color: #1F3864; font-weight: bold; }
+  .filter-box input[type=datetime-local] {
+    border: 1px solid #1F4E79; border-radius: 6px; padding: 7px 12px;
+    font-size: .9rem; color: #222; background: white;
+  }
+  .btn-filter {
+    background: #1F3864; color: white; border: none; border-radius: 6px;
+    padding: 8px 20px; cursor: pointer; font-size: .9rem; font-weight: bold;
+  }
+  .btn-filter:hover { background: #2E5496; }
+  .btn-reset {
+    background: transparent; color: #555; border: 1px solid #ccc;
+    border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: .9rem;
+    text-decoration: none;
+  }
+  .periode-label {
+    font-size: .85rem; color: #555; font-style: italic;
+  }
+
+  .stats { display: flex; gap: 16px; margin: 20px 0; flex-wrap: wrap; }
+  .stat { background: #EBF3FB; border: 1px solid #1F4E79; border-radius: 8px;
+          padding: 14px 20px; text-align: center; min-width: 90px; }
+  .stat .n { font-size: 1.8rem; font-weight: bold; color: #1F3864; }
+  .stat .l { font-size: .75rem; color: #555; }
+  .p1 .n { color: #C00000; } .p2 .n { color: #E07000; } .p3 .n { color: #00B050; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .88rem; }
+  th { background: #1F3864; color: white; padding: 8px 12px; text-align: left; }
+  td { padding: 7px 12px; border-bottom: 1px solid #ddd; }
+  tr:nth-child(even) { background: #f5f8ff; }
+  .badge { padding: 2px 10px; border-radius: 4px; font-weight: bold; font-size: .78rem; }
+  .P1{background:#FFE0E0;color:#C00000;} .P2{background:#FFF0CC;color:#E07000;}
+  .P3{background:#E0FFE8;color:#00B050;} .P4{background:#EEE;color:#555;}
+  .footer { margin-top: 40px; font-size:.78rem; color:#888;
+            border-top: 1px solid #ddd; padding-top: 10px; }
+  @media print {
+    .no-print { display: none; }
+    .filter-box { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Barre actions -->
+<div class="no-print" style="margin-bottom:20px;display:flex;gap:12px;align-items:center">
+  <button onclick="window.print()"
+    style="background:#1F3864;color:white;border:none;padding:10px 24px;
+           border-radius:6px;cursor:pointer;font-size:.9rem">
+    🖨️ Imprimer / Exporter PDF
+  </button>
+  <a href="/dashboard" class="btn-reset">← Retour au dashboard</a>
+</div>
+
+<h1>🛡️ Rapport SOC AI</h1>
+<p style="color:#555;margin-bottom:20px">
+  Généré le {{ generated_at }} par <b>{{ session.name }}</b>
+</p>
+
+<!-- Formulaire de filtre -->
+<div class="filter-box no-print">
+  <form method="GET" action="/rapport"
+        style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%">
+    <div>
+      <label>📅 Du :</label><br>
+      <input type="datetime-local" name="debut"
+             value="{{ date_debut }}" step="1">
+    </div>
+    <div>
+      <label>📅 Au :</label><br>
+      <input type="datetime-local" name="fin"
+             value="{{ date_fin }}" step="1">
+    </div>
+    <div style="margin-top:18px;display:flex;gap:8px">
+      <button type="submit" class="btn-filter">🔍 Générer</button>
+      <a href="/rapport" class="btn-reset">✕ Réinitialiser</a>
+    </div>
+  </form>
+</div>
+
+<!-- Période affichée -->
+{% if date_debut or date_fin %}
+<p class="periode-label">
+  Période sélectionnée :
+  <b>{{ date_debut[:16] if date_debut else 'début' }}</b>
+  →
+  <b>{{ date_fin[:16] if date_fin else 'maintenant' }}</b>
+  — <b>{{ stats.total }}</b> alerte(s) trouvée(s)
+</p>
+{% else %}
+<p class="periode-label">Toutes les alertes — aucun filtre appliqué</p>
+{% endif %}
+
+<h2>Statistiques</h2>
+<div class="stats">
+  <div class="stat"><div class="n">{{ stats.total }}</div><div class="l">Total</div></div>
+  <div class="stat p1"><div class="n">{{ stats.p1 }}</div><div class="l">P1 Critique</div></div>
+  <div class="stat p2"><div class="n">{{ stats.p2 }}</div><div class="l">P2 Élevé</div></div>
+  <div class="stat p3"><div class="n">{{ stats.p3 }}</div><div class="l">P3 Moyen</div></div>
+  <div class="stat"><div class="n">{{ stats.p4 }}</div><div class="l">P4 Faible</div></div>
+  <div class="stat p1"><div class="n">{{ stats.blocked }}</div><div class="l">Bloquées</div></div>
+  <div class="stat"><div class="n">{{ stats.closed }}</div><div class="l">Fermées</div></div>
+</div>
+
+<h2>Détail des alertes</h2>
+{% if incidents %}
+<table>
+  <thead>
+    <tr>
+      <th>Alert ID</th><th>IP Source</th><th>Priorité</th>
+      <th>Pattern</th><th>Phase</th><th>Ticket</th>
+      <th>Bloquée</th><th>Statut</th><th>Timestamp</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for i in incidents %}
+  <tr>
+    <td>{{ i.alert_id or '—' }}</td>
+    <td><b>{{ i.ip }}</b></td>
+    <td><span class="badge {{ i.priority }}">{{ i.priority }}</span></td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+      {{ i.correlation.attack_pattern if i.correlation else '—' }}</td>
+    <td>{{ i.investigation.attack_stage if i.investigation else '—' }}</td>
+    <td style="font-size:.78rem;color:#555">{{ i.ticket_id or '—' }}</td>
+    <td>{% if i.blocked %}⬛ Oui{% else %}—{% endif %}</td>
+    <td>{{ i.status or 'open' }}</td>
+    <td style="font-size:.78rem;color:#555">{{ (i.timestamp or '')[:16] }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:#888;font-style:italic;margin-top:16px">
+  Aucune alerte trouvée pour cette période.
+</p>
+{% endif %}
+
+<div class="footer">
+  Rapport généré par SOC AI — Tunisie Telecom SOC — {{ generated_at }}
+</div>
+</body>
+</html>

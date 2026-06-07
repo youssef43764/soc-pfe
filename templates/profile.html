@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOC AI — Mon profil</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700&display=swap');
+:root {
+  --bg:#07090f; --surf:#0c1018; --surf2:#111622;
+  --border:#1c2535; --border2:#2a3a50;
+  --text:#b8cce0; --muted:#3d5470;
+  --accent:#00e5ff; --p1:#ff2d55; --p3:#30d158;
+  --mono:'Share Tech Mono',monospace; --display:'Syne',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--display);background:var(--bg);color:var(--text);min-height:100vh;}
+
+header{height:52px;display:flex;align-items:center;gap:16px;padding:0 24px;
+       background:var(--surf);border-bottom:1px solid var(--border);
+       position:sticky;top:0;z-index:50;}
+.logo{font-family:var(--mono);font-size:1rem;color:var(--accent);letter-spacing:3px;}
+.user-info{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.role-badge-admin{background:#3d0d14;color:var(--p1);font-family:var(--mono);
+                  font-size:.68rem;padding:2px 10px;border-radius:4px;border:1px solid #5a1520;}
+.role-badge-analyst{background:#002e1a;color:var(--p3);font-family:var(--mono);
+                    font-size:.68rem;padding:2px 10px;border-radius:4px;border:1px solid #004a2a;}
+nav a{font-family:var(--mono);font-size:.75rem;color:var(--muted);text-decoration:none;
+      padding:5px 14px;border-radius:5px;border:1px solid transparent;transition:all .2s;}
+nav a:hover{color:var(--accent);border-color:var(--border2);background:var(--border);}
+.btn-logout{font-family:var(--mono);font-size:.72rem;color:var(--muted);background:transparent;
+            border:1px solid var(--border2);border-radius:5px;padding:5px 12px;
+            cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--p1);border-color:var(--p1);}
+
+/* Layout */
+.wrap{max-width:560px;margin:40px auto;padding:0 24px;}
+
+.profile-header{display:flex;align-items:center;gap:20px;margin-bottom:32px;}
+.avatar{width:64px;height:64px;border-radius:16px;
+        background:linear-gradient(135deg,#00e5ff22,#00e5ff11);
+        border:1px solid var(--accent);
+        display:flex;align-items:center;justify-content:center;
+        font-size:1.8rem;box-shadow:0 0 20px rgba(0,229,255,.1);}
+.profile-info h1{font-size:1.3rem;color:var(--text);margin-bottom:4px;}
+.profile-info .username{font-family:var(--mono);font-size:.8rem;color:var(--muted);}
+
+.card{background:var(--surf);border:1px solid var(--border);border-radius:12px;
+      padding:24px 28px;margin-bottom:16px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.card-info::before{background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.card-pwd::before{background:linear-gradient(90deg,transparent,var(--p1),transparent);}
+
+.card-title{font-family:var(--mono);font-size:.65rem;color:var(--muted);
+            text-transform:uppercase;letter-spacing:2px;margin-bottom:18px;
+            padding-bottom:10px;border-bottom:1px solid var(--border);}
+
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-family:var(--mono);font-size:.65rem;color:var(--muted);
+          text-transform:uppercase;letter-spacing:2px;margin-bottom:7px;}
+.fg input{width:100%;background:var(--bg);border:1px solid var(--border2);
+          border-radius:8px;padding:10px 14px;color:var(--text);
+          font-family:var(--mono);font-size:.88rem;outline:none;
+          transition:border-color .2s,box-shadow .2s;}
+.fg input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,255,.06);}
+.fg input[disabled]{opacity:.4;cursor:not-allowed;}
+
+.fg-note{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:5px;}
+
+.btn-save{background:var(--accent);color:var(--bg);border:none;border-radius:8px;
+          padding:10px 24px;font-family:var(--mono);font-size:.82rem;font-weight:700;
+          letter-spacing:1px;cursor:pointer;transition:opacity .15s;}
+.btn-save:hover{opacity:.85;}
+.btn-save:disabled{opacity:.4;cursor:not-allowed;}
+
+.alert{border-radius:7px;padding:10px 14px;font-family:var(--mono);font-size:.78rem;
+       margin-bottom:16px;display:none;}
+.alert-error{background:#3d0d1433;border:1px solid #ff2d5544;color:var(--p1);}
+.alert-success{background:#002e1a33;border:1px solid #30d15844;color:var(--p3);}
+
+.info-row{display:flex;justify-content:space-between;padding:8px 0;
+          border-bottom:1px solid var(--border);font-size:.85rem;}
+.info-row:last-child{border:none;}
+.info-row .k{color:var(--muted);font-size:.78rem;}
+.info-row .v{font-family:var(--mono);font-size:.8rem;}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surf);
+       border:1px solid var(--p3);border-radius:8px;padding:12px 20px;
+       font-family:var(--mono);font-size:.8rem;color:var(--p3);
+       box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:300;
+       opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SOC/AI</div>
+  <nav>
+    <a href="/">← Dashboard</a>
+    {% if user.role == 'admin' %}
+    <a href="/admin/users">👥 Utilisateurs</a>
+    {% endif %}
+  </nav>
+  <div class="user-info">
+    <span style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">{{ user.name }}</span>
+    {% if user.role == 'admin' %}
+    <span class="role-badge-admin">ADMIN</span>
+    {% else %}
+    <span class="role-badge-analyst">ANALYST</span>
+    {% endif %}
+    <button class="btn-logout" onclick="location.href='/logout'">Déconnexion</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- En-tête profil -->
+  <div class="profile-header">
+    <div class="avatar">
+      {{ user.name[0].upper() if user.name else '?' }}
+    </div>
+    <div class="profile-info">
+      <h1>{{ profile.name }}</h1>
+      <div class="username">@{{ profile.username }}</div>
+    </div>
+  </div>
+
+  <!-- Infos compte -->
+  <div class="card card-info" style="margin-bottom:16px">
+    <div class="card-title">Informations du compte</div>
+    <div class="info-row">
+      <span class="k">Identifiant</span>
+      <span class="v">{{ profile.username }}</span>
+    </div>
+    <div class="info-row">
+      <span class="k">Rôle</span>
+      <span class="v">
+        {% if profile.role == 'admin' %}
+        <span class="role-badge-admin">ADMIN</span>
+        {% else %}
+        <span class="role-badge-analyst">ANALYST</span>
+        {% endif %}
+      </span>
+    </div>
+    <div class="info-row">
+      <span class="k">Créé le</span>
+      <span class="v">{{ (profile.created or '')[:16] }}</span>
+    </div>
+  </div>
+
+  <!-- Modifier nom -->
+  <div class="card card-info">
+    <div class="card-title">✏️ Modifier les informations</div>
+    <div class="alert alert-error" id="info-error"></div>
+    <div class="fg">
+      <label>Identifiant</label>
+      <input type="text" value="{{ profile.username }}" disabled>
+      <div class="fg-note">L'identifiant ne peut pas être modifié.</div>
+    </div>
+    <div class="fg">
+      <label>Nom complet</label>
+      <input type="text" id="new-name" value="{{ profile.name }}" placeholder="Votre nom">
+    </div>
+    <button class="btn-save" onclick="saveName()">Enregistrer le nom</button>
+  </div>
+
+  <!-- Changer mot de passe -->
+  <div class="card card-pwd" style="margin-top:16px">
+    <div class="card-title">🔒 Changer le mot de passe</div>
+    <div class="alert alert-error"   id="pwd-error"></div>
+    <div class="alert alert-success" id="pwd-success"></div>
+    <div class="fg">
+      <label>Mot de passe actuel</label>
+      <input type="password" id="old-password" placeholder="••••••••">
+    </div>
+    <div class="fg">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="new-password" placeholder="••••••••">
+      <div class="fg-note">Minimum 6 caractères.</div>
+    </div>
+    <div class="fg">
+      <label>Confirmer le nouveau mot de passe</label>
+      <input type="password" id="confirm-password" placeholder="••••••••">
+    </div>
+    <button class="btn-save" onclick="savePassword()">Changer le mot de passe</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = isError ? 'var(--p1)' : 'var(--p3)';
+  t.style.color       = isError ? 'var(--p1)' : 'var(--p3)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+// Modifier nom
+async function saveName() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) { showError('info-error', 'Le nom ne peut pas être vide.'); return; }
+
+  const r = await fetch('/profile/update', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ name })
+  });
+  const d = await r.json();
+  if (d.ok) {
+    showToast('✅ Nom mis à jour');
+    setTimeout(() => location.reload(), 1000);
+  } else {
+    showError('info-error', d.error || 'Erreur');
+  }
+}
+
+// Changer mot de passe
+async function savePassword() {
+  const old_password     = document.getElementById('old-password').value;
+  const new_password     = document.getElementById('new-password').value;
+  const confirm_password = document.getElementById('confirm-password').value;
+
+  if (!old_password || !new_password || !confirm_password) {
+    showError('pwd-error', 'Tous les champs sont requis.'); return;
+  }
+  if (new_password !== confirm_password) {
+    showError('pwd-error', 'Les mots de passe ne correspondent pas.'); return;
+  }
+  if (new_password.length < 6) {
+    showError('pwd-error', 'Nouveau mot de passe trop court (min 6 caractères).'); return;
+  }
+
+  const r = await fetch('/profile/update', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ old_password, password: new_password, name: document.getElementById('new-name').value })
+  });
+  const d = await r.json();
+  if (d.ok) {
+    showToast('✅ Mot de passe changé');
+    document.getElementById('old-password').value     = '';
+    document.getElementById('new-password').value     = '';
+    document.getElementById('confirm-password').value = '';
+  } else {
+    showError('pwd-error', d.error || 'Erreur');
+  }
+}
+
+// Entrée → submit
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const active = document.activeElement;
+    if (active.id === 'new-name')          saveName();
+    if (active.id === 'confirm-password')  savePassword();
+  }
+});
+</script>
+</body>
+</html>

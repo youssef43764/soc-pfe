@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOC AI — Connexion</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap');
+:root {
+  --bg:#07090f; --surf:#0c1018; --border:#1c2535; --border2:#2a3a50;
+  --text:#b8cce0; --muted:#3d5470; --accent:#00e5ff; --p1:#ff2d55;
+  --mono:'Share Tech Mono',monospace; --display:'Syne',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--display);background:var(--bg);color:var(--text);
+     min-height:100vh;display:flex;align-items:center;justify-content:center;}
+
+/* Background grid */
+body::before {
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+}
+
+.card {
+  width:100%;max-width:400px;
+  background:var(--surf);
+  border:1px solid var(--border2);
+  border-radius:16px;
+  padding:40px 36px;
+  box-shadow:0 40px 80px rgba(0,0,0,.6);
+  animation:fadeUp .4s ease;
+  position:relative;
+  overflow:hidden;
+}
+.card::before {
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+.logo-wrap {
+  text-align:center;margin-bottom:32px;
+}
+.logo-icon {
+  width:52px;height:52px;border-radius:12px;
+  background:linear-gradient(135deg,#00e5ff22,#00e5ff11);
+  border:1px solid var(--accent);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:1.4rem;margin-bottom:12px;
+  box-shadow:0 0 30px rgba(0,229,255,.15);
+}
+.logo-title {
+  font-family:var(--mono);font-size:1.2rem;color:var(--accent);
+  letter-spacing:4px;display:block;
+}
+.logo-sub {
+  font-size:.75rem;color:var(--muted);margin-top:4px;
+  text-transform:uppercase;letter-spacing:2px;
+}
+
+.form-group{margin-bottom:18px;}
+label{
+  display:block;font-family:var(--mono);font-size:.7rem;
+  color:var(--muted);text-transform:uppercase;letter-spacing:2px;
+  margin-bottom:7px;
+}
+input[type=text], input[type=password] {
+  width:100%;background:var(--bg);border:1px solid var(--border2);
+  border-radius:8px;padding:11px 14px;color:var(--text);
+  font-family:var(--mono);font-size:.9rem;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,229,255,.08);
+}
+
+.btn-login {
+  width:100%;background:var(--accent);color:var(--bg);
+  border:none;border-radius:8px;padding:12px;
+  font-family:var(--mono);font-size:.9rem;font-weight:700;
+  letter-spacing:2px;cursor:pointer;
+  transition:opacity .15s,transform .1s;
+  margin-top:8px;
+}
+.btn-login:hover{opacity:.9;}
+.btn-login:active{transform:scale(.98);}
+
+.error {
+  background:#3d0d1433;border:1px solid #ff2d5544;
+  border-radius:7px;padding:10px 14px;
+  font-family:var(--mono);font-size:.8rem;color:var(--p1);
+  margin-bottom:18px;display:flex;align-items:center;gap:8px;
+}
+
+.footer-note {
+  text-align:center;margin-top:24px;
+  font-family:var(--mono);font-size:.68rem;color:var(--muted);
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-wrap">
+    <div class="logo-icon">🛡️</div>
+    <span class="logo-title">SOC/AI</span>
+    <div class="logo-sub">Security Operations Center</div>
+  </div>
+
+  {% if error %}
+  <div class="error">⚠ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST">
+    <div class="form-group">
+      <label>Identifiant</label>
+      <input type="text" name="username" placeholder="admin" autocomplete="username" required autofocus>
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn-login">CONNEXION →</button>
+  </form>
+
+  <div class="footer-note">SOC AI v2.0 — Accès restreint</div>
+</div>
+</body>
+</html>
